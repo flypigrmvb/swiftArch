@@ -38,11 +38,6 @@ class Feed: NSObject, HandyJSON  {
         } else if let text = self.payload?.record?.reviewContent {
             // 游戏记录
             var composeText = text
-//            if self.isRetweeted {
-//                if let nickName = user?.nickname {
-//                    composeText = "@" + nickName + " " + text
-//                }
-//            }
             let extraText = (self.payload?.record?.deserve == 1 ? "值得玩，" : "不值得玩，")
             composeText = text
             return self.composeAttrStr(text: composeText, extraText: extraText, atUser: nil)
@@ -50,12 +45,17 @@ class Feed: NSObject, HandyJSON  {
         return attributeText
     }()
     
-    func composeAttrStr(text: String, extraText: String? = nil, atUser: PostUser? = nil) -> NSAttributedString {
-        
+    
+    /// 文字分段处理
+    ///
+    ///   - text: 原始的文字
+    ///   - extraText: 附件的文字，添加的原始文字之前（游戏记录中的值得玩、不值得玩）
+    ///   - atUser: @用户，添加在原始文字之前
+    func generateTextParts(text: String, extraText: String? = nil, atUser: PostUser? = nil) -> [TextPart] {
         var textParts = [TextPart]()
-       
+        
         // 遍历entities
-        var curOffset = 0
+        var curOffset = 0 // 记录原始字符串的位置，布包好内容中有更新
         var entities: [PostTextContentEntity] = [PostTextContentEntity]()
         if self.payload?.post?.content?.entities != nil {
             entities = (self.payload?.post?.content?.entities)!.sorted { $0.offset < $1.offset}
@@ -64,55 +64,60 @@ class Feed: NSObject, HandyJSON  {
                     // 普通文字 curOffset-entity.offset
                     let part = TextPart()
                     part.range = NSRange.init(location: curOffset, length: entity.offset - curOffset)
-                    if part.range.location + part.range.length > text.count {
-                        break;
-                    }
                     part.text = (text as NSString).substring(with: part.range)
                     part.isSpecial = false
+                    part.specialObj = entity
                     textParts.append(part)
                 }
                 
-                // 特殊文字 entity.offset-entity.offset+entity.length
+                // 特殊文字 entity.offset,entity.length，需要把内容替换为entity中更新的内容
                 let part = TextPart()
-                part.range = NSRange.init(location: entity.offset, length: entity.length)
-                if part.range.location + part.range.length > text.count {
-                    break;
+                let originalPartText = (text as NSString).substring(with: NSRange.init(location: entity.offset, length: entity.length))
+                if originalPartText.contains("@") && entity.data?.nickname != nil {
+                    // @用户
+                    part.text = "@" + (entity.data?.nickname)!
+                } else if originalPartText.contains("#") && entity.data?.title != nil {
+                    // #话题#
+                    part.text = "#" + (entity.data?.title)! + "#"
+                } else {
+                    part.text = originalPartText
                 }
-                part.text = (text as NSString).substring(with: part.range)
+                part.range = NSRange.init(location: entity.offset, length: (part.text as NSString).length)
                 part.isSpecial = true
+                part.specialObj = entity
                 textParts.append(part)
                 
-                curOffset = entity.offset+entity.length
+                curOffset = entity.offset + entity.length
             }
         }
         
         // 最后的普通文字
-        if curOffset < text.count {
+        if curOffset < (text as NSString).length {
             let part = TextPart()
-            part.range = NSRange.init(location: curOffset, length: text.count - curOffset)
+            part.range = NSRange.init(location: curOffset, length: (text as NSString).length - curOffset)
             part.text = (text as NSString).substring(with: part.range)
             part.isSpecial = false
             textParts.append(part)
         }
         
-        textParts.sort { $0.range.location < $1.range.location }
-        self.textParts = textParts
-        
-        let specialAttributes = [NSAttributedStringKey.foregroundColor: UIColor.blue, NSAttributedStringKey.font: UIFont.systemFont(ofSize: 15)]
-        let normalAttributes = [NSAttributedStringKey.foregroundColor: UIColor.black, NSAttributedStringKey.font: UIFont.systemFont(ofSize: 15)]
-        let extraAttributes = [NSAttributedStringKey.foregroundColor: UIColor.purple, NSAttributedStringKey.font: UIFont.systemFont(ofSize: 15)]
-        let iconFont = UIFont(name: "iconFont", size: 15)
-        let iconAttributes = [NSAttributedStringKey.foregroundColor: UIColor.blue, NSAttributedStringKey.font: iconFont]
+        // 处理附加的文字，值得玩和不值得玩信息
+        if extraText != nil {
+            let part = TextPart()
+            part.specialType = .deserved
+            part.text = extraText!
+            part.range = NSRange.init(location: 0, length: (part.text as NSString).length)
+            part.isSpecial = true
 
-        let mAttrStr = NSMutableAttributedString()
-        var textSpecials = [TextSpecial]()
+            textParts.insert(part, at: 0)
+        }
         
         // 处理at用户
         if atUser != nil {
-            let special = TextSpecial()
-            special.text = "@" + (atUser?.nickname)! + " "
-            special.specialType = .atUser
-            special.range = NSRange.init(location: mAttrStr.length, length: special.text.count)
+            let part = TextPart()
+            part.specialType = .atUser
+            part.text = "@" + (atUser?.nickname)! + ": "
+            part.range = NSRange.init(location: 0, length: (part.text as NSString).length)
+            part.isSpecial = true
             
             // 特殊数据
             let specialEntityData = PostTextContentEntity()
@@ -120,47 +125,71 @@ class Feed: NSObject, HandyJSON  {
             let specialData = PostTextContentEntityData()
             specialData.id = (atUser?.id)!
             specialEntityData.data = specialData
-            special.specialObj = specialEntityData
+            part.specialObj = specialEntityData
             
-            textSpecials.append(special)
-            
-            mAttrStr.append(NSAttributedString(string: special.text, attributes: specialAttributes))
+            textParts.insert(part, at: 0)
         }
         
-        // 处理附加的文字
-        if extraText != nil {
-//            let special = TextSpecial()
-//            special.text = extraText!
-//            special.range = NSRange.init(location: mAttrStr.length, length: special.text.count)
-//            textSpecials.append(special)
-            
-            mAttrStr.append(NSAttributedString(string: extraText!, attributes: extraAttributes))
+        // textpar中的length是正确的，需要重新调整textpar的location
+        var curIndex = 0
+        for textPart in textParts {
+            textPart.range.location = curIndex
+            curIndex += textPart.range.length
         }
+        
+        return textParts
+    }
+    
+    /// 生成列表显示的属性文字
+    ///
+    /// - Parameters:
+    ///   - text: 原始的文字
+    ///   - extraText: 附件的文字，添加的原始文字之前（游戏记录中的值得玩、不值得玩）
+    ///   - atUser: @用户，添加在原始文字之前
+    func composeAttrStr(text originalText: String, extraText: String? = nil, atUser: PostUser? = nil) -> NSAttributedString {
+        
+        // 文字分段处理
+        let textParts = self.generateTextParts(text: originalText, extraText: extraText, atUser: atUser)
+        self.textParts = textParts
+        
+        // 属性文字的拼装
+        let specialAttributes = [NSAttributedStringKey.foregroundColor: UIColor.blue, NSAttributedStringKey.font: UIFont.systemFont(ofSize: 15)]
+        let normalAttributes = [NSAttributedStringKey.foregroundColor: UIColor.black, NSAttributedStringKey.font: UIFont.systemFont(ofSize: 15)]
+        let deservedAttributes = [NSAttributedStringKey.foregroundColor: UIColor.purple, NSAttributedStringKey.font: UIFont.systemFont(ofSize: 15)]
+        let iconFont = UIFont(name: "iconFont", size: 15)
+        let iconAttributes = [NSAttributedStringKey.foregroundColor: UIColor.blue, NSAttributedStringKey.font: iconFont]
+
+        let mAttrStr = NSMutableAttributedString()
+        var textSpecials = [TextSpecial]()
         
         // 处理内容中的特殊内容
-        var specialDataIndex = 0
         for textPart in textParts {
             if textPart.isSpecial {
-                let attr = NSMutableAttributedString()
+                let attrStr = NSMutableAttributedString()
                 
                 // 处理特殊文字中的图标（iconFont）
                 if textPart.text.contains("\u{e60e}") {
                     let iconAttr = NSAttributedString(string: "\u{e618}", attributes: (iconAttributes as Any as! [NSAttributedStringKey : Any]))
                     let iconTextAttr = NSAttributedString(string: (textPart.text as NSString).replacingOccurrences(of: "\u{e60e}", with: ""), attributes: specialAttributes)
-                    attr.append(iconAttr)
-                    attr.append(iconTextAttr)
+                    attrStr.append(iconAttr)
+                    attrStr.append(iconTextAttr)
                 } else {
-                    attr.append(NSAttributedString(string: textPart.text, attributes: specialAttributes))
+                    var attr: [NSAttributedStringKey : Any]?
+                    if textPart.specialType == .deserved {
+                        attr = deservedAttributes
+                    } else {
+                        attr = specialAttributes
+                    }
+                    attrStr.append(NSAttributedString(string: textPart.text, attributes: attr))
                 }
                 
                 let special = TextSpecial()
                 special.text = textPart.text
-                special.specialObj = entities[specialDataIndex]
-                specialDataIndex += 1
-                special.range = NSRange.init(location: mAttrStr.length, length: textPart.text.count)
+                special.specialObj = textPart.specialObj
+                special.range = NSRange.init(location: mAttrStr.length, length: (textPart.text as NSString).length)
                 textSpecials.append(special)
                 
-                mAttrStr.append(attr)
+                mAttrStr.append(attrStr)
             } else {
                 mAttrStr.append(NSAttributedString(string: textPart.text, attributes: normalAttributes))
             }
@@ -304,21 +333,22 @@ class PostArticle: NSObject, HandyJSON {
     required override init() {}
 }
 
+enum TextSpecialType {
+    case normal
+    case atUser
+    case deserved
+    case game
+}
+
 class TextPart: NSObject {
     var isSpecial = false
+    var specialType: TextSpecialType = .normal
+    var specialObj: PostTextContentEntity?
     var text: String = ""
     var range: NSRange = NSRange()
 }
 
 class TextSpecial: NSObject {
-    
-    enum TextSpecialType {
-        case normal
-        case atUser
-        case deserved
-        case game
-    }
-    
     var specialType: TextSpecialType = .normal
     var specialObj: PostTextContentEntity?
     var text: String = ""

@@ -47,22 +47,22 @@ class FeedsDemoViewController: PagingViewController {
         
         let strategy:FeedPaingStrategy=pagingStrategy as! FeedPaingStrategy;
         let pageInfo:FeedPageInfo=strategy.getPageInfo() as! FeedPageInfo
-
+        
         self.remoteService.getFeedsMock { [weak self] (result: Array<SPFeedVM>) in
             if let strongSelf=self{
-            
-                    if(pageInfo.isFirstPage()){
-                        strongSelf.datasource=result
+                
+                if(pageInfo.isFirstPage()){
+                    strongSelf.datasource=result
                     
-                    }else{
-                        strongSelf.datasource = strongSelf.datasource + result
-                    }
+                }else{
+                    strongSelf.datasource = strongSelf.datasource + result
+                }
                 // 调用者必须维护两个列表
                 // 1.和分页相关的列表
                 // 2.总数据源的列表
-                    strongSelf.loadSuccess(resultData: result as NSObject, dataSource: strongSelf.datasource, pagingList: strongSelf.datasource)
-                }
-         }
+                strongSelf.loadSuccess(resultData: result as NSObject, dataSource: strongSelf.datasource, pagingList: strongSelf.datasource)
+            }
+        }
     }
     
     override func tableView(_ tableView: UITableView, heightForModel model: NSObject) -> CGFloat {

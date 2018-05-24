@@ -10,19 +10,6 @@ import UIKit
 
 class SPFeedVM: NSObject {
     
-    // Feed 富文本内容
-    private lazy var measure5LineLabel: UILabel = {
-        let measure5LineLabel = UILabel()
-        measure5LineLabel.numberOfLines = 5
-        return measure5LineLabel
-    }()
-    
-    private lazy var measure6LineLabel: UILabel = {
-        let measure6LineLabel = UILabel()
-        measure6LineLabel.numberOfLines = 6
-        return measure6LineLabel
-    }()
-    
     // 分页策略器使用到的id
     @objc var id = 0
 
@@ -36,6 +23,10 @@ class SPFeedVM: NSObject {
     static let retweetImageWH = (UIScreen.main.bounds.width - SPFeedVM.avatarWH - SPFeedVM.paddingH * 7)/CGFloat(SPFeedVM.photoCountPerRow)
     static let toolBarH: CGFloat = 40
     static let separatorLineH: CGFloat = 10
+    /// 单行文本的高度，计算高度的时候
+    static let oneLineH: CGFloat = 18
+    /// 限制的行数
+    static let limitLine: Int = 5
 
     // MARK:- 显示内容
     @objc var feed: Feed? {
@@ -210,16 +201,11 @@ class SPFeedVM: NSObject {
     
     /// 判断尺寸是否合适
     private func judgeSizeIsMatch(attributeText: NSAttributedString, fitSize: CGSize) -> (Bool) {
-        self.measure5LineLabel.attributedText = attributeText;
-        let fit5LineSize = self.measure5LineLabel.sizeThatFits(fitSize)
-        
-        self.measure6LineLabel.attributedText = attributeText;
-        let fit6LineSize = self.measure6LineLabel.sizeThatFits(fitSize)
-        
-        if abs(fit5LineSize.height - fit6LineSize.height) > 0.1 {
-            return false
+        let contentSize = attributeText.boundingRect(with: fitSize, options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+        if contentSize.height < SPFeedVM.oneLineH * CGFloat(SPFeedVM.limitLine) {
+            return true
         }
-        return true
+        return abs(contentSize.height - SPFeedVM.oneLineH * CGFloat(SPFeedVM.limitLine)) < 2
     }
     
     /// 重新生成显示的属性字符串，限制5行，并且在末尾添加“查看更多”
@@ -313,7 +299,6 @@ class SPFeedVM: NSObject {
     private func handleSpecial(feed: Feed, lastRange: NSRange, lastSpecial: TextSpecial) {
         var removeIndexs = [Int]()
         for index in 0...feed.specials.count-1 {
-            // FIXME: Bug
             let reversedIndex = feed.specials.count - 1 - index
             let exitSpecial = feed.specials[reversedIndex]
             if exitSpecial.range.location >= lastRange.location {

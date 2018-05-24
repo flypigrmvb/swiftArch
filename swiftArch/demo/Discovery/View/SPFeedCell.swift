@@ -46,10 +46,15 @@ class SPFeedCell: UITableViewCell {
     // Feed 富文本内容
     private lazy var contentTextView: SPFeedTextView = {
         let contentTextView = SPFeedTextView()
-        contentTextView.textContainerInset = UIEdgeInsetsMake(0, -5, 0, -5)
+        let lineFragmentPadding = contentTextView.textContainer.lineFragmentPadding
+        contentTextView.textContainerInset = UIEdgeInsetsMake(0, -lineFragmentPadding, 0, -lineFragmentPadding)
         contentTextView.isEditable = false
         contentTextView.isScrollEnabled = false
         contentTextView.isSelectable = false
+        
+        let textContainerInset = contentTextView.textContainerInset
+        print("lineFragmentPadding = \(lineFragmentPadding)  textContainerInset = \(textContainerInset)")
+        
         return contentTextView
     }()
     
