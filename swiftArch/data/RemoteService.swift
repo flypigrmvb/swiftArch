@@ -110,7 +110,7 @@ class RemoteService {
                 if(requestCount==0){
                     var list:Array<NSObject>=[NSObject]()
                     list.append(bannerVM)
-                    list.append(contentsOf: articles)
+                    list = list + articles
                     success(list)
                 }
             }) { (code, msg) in
@@ -122,7 +122,7 @@ class RemoteService {
                 if(requestCount==0){
                     var list:Array<NSObject>=[NSObject]()
                     list.append(bannerVM)
-                    list.append(contentsOf: articles)
+                    list = list + articles
                     success(list)
                 }
             }) { (code, msg) in
