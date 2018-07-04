@@ -10,7 +10,7 @@ import UIKit
 
 class PaingTalbeDemoViewController: PagingViewController {
 
-    var remoteService:RemoteService=DataManager.shareInstance.remoteService
+    var socailAppService:SocialAppService=DataManager.shareInstance.socailAppService
     
     private var datasource=Array<NSObject>()
     private var pagingList=Array<GameModel>()
@@ -20,7 +20,8 @@ class PaingTalbeDemoViewController: PagingViewController {
         super.initView()
         self.title="真实的分页请求(还支持section)"
     }
-     
+    
+    
     override func initTableView() {
         super.initTableView()
         self.tableView?.estimatedRowHeight = 80//这个值不影响行高 最好接近你想要的值 
@@ -55,7 +56,7 @@ class PaingTalbeDemoViewController: PagingViewController {
          
         let strategy:NormalPagingStrategy=pagingStrategy as! NormalPagingStrategy;
         let pageInfo:NormalPageInfo=strategy.getPageInfo() as! NormalPageInfo
-        self.remoteService.getGame(pageNum: pageInfo.pageNum, pageSize: pageInfo.pageSize, success: { [weak self] (gameListModel) in
+        self.socailAppService.getGame(pageNum: pageInfo.pageNum, pageSize: pageInfo.pageSize, success: { [weak self] (gameListModel) in
             if let strongSelf = self {
                 if(pageInfo.isFirstPage()){
                     strongSelf.pagingList=(gameListModel?.listData)!
@@ -103,6 +104,25 @@ class PaingTalbeDemoViewController: PagingViewController {
         }
     } 
 
+   
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        if let _ = self.getRealDataSourceModel(indexPath: indexPath) as? GameModel {
+            return true
+        }
+        
+        return false
+        
+    }
+    func tableView(_ tableView: UITableView, editingStyleForRowAt indexPath: IndexPath) -> UITableViewCellEditingStyle {
+        return UITableViewCellEditingStyle.delete
+    }
     
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        
+        self.datasource.remove(at: self.getDataSourceRowIndex(indexPath: indexPath))
+        self.reloadDataSource(dataSource: self.datasource)
+        
+        
+    }
     
 }

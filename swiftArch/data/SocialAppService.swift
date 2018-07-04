@@ -11,25 +11,26 @@ import UIKit
 ///一个service 持有一个httpclient
 ///我的意思是 一个httpclient管理一个baseUrl 通常对应一个系统
 ///同一个系统下面 head cookie 返回值result节点和 sucees条件是一样的
-class RemoteService {
+class SocialAppService {
     
-    let httpClient = HttpClient(baseUrl:DataManager.shareInstance.baseUrl,headers:["X-Requested-With":"XMLHttpRequest"])
+    let httpClient = HttpClient(baseUrl:DataManager.shareInstance.baseUrlSocail,headers:["X-Requested-With":"XMLHttpRequest"])
     let mockService:MockService=MockService();
+    
     
     
     typealias failureCallback = (_ statusCode:Int?,_ msg:String?) -> Void
     
     func getUser(userId:String,password:String,success:@escaping ((User?)->()),failure:@escaping failureCallback ){
-        httpClient.request(url: "user/{userId}", method: .get, pathParams: ["userId":userId ], params: ["password":password])
-            .responseModelAndCache(success: { (result:Result<User>,isCache:Bool) in
+        httpClient.request(url: "user/{userId}", method: .post, pathParams: ["userId":userId ], params: ["password":password])
+            .responseModelAndCache(readCache:true ,success: { (result:Result<User>,isCache:Bool) in
                 if(self.checkSuccess(result: result)){
                     success(self.getData(result: result))
                 }
                 else{
                     failure(result.status,result.msg)
                 }
-            }, failure: {statusCode,error in
-                failure(statusCode,error.localizedDescription)
+            }, failure: {statusCode,msg in
+                failure(statusCode,msg)
             })
     }
     
@@ -42,8 +43,8 @@ class RemoteService {
                 else{
                     failure(result.status,result.msg)
                 }
-            }, failure: {statusCode,error in
-                failure(statusCode,error.localizedDescription)
+            }, failure: {statusCode,msg in
+                failure(statusCode,msg)
             })
     }
     
@@ -61,8 +62,8 @@ class RemoteService {
                 else{
                     failure(result.status,result.msg)
                 }
-            }, failure: {statusCode,error in
-                failure(statusCode,error.localizedDescription)
+            }, failure: {statusCode,msg in
+                failure(statusCode,msg)
             })
     }
     
@@ -127,9 +128,7 @@ class RemoteService {
                 }
             }) { (code, msg) in
                 failure(code, msg)
-                
             }
-            
         }
         else{
             self.getFeedArticle(direction: direction, pageSize: pageSize, offsetId: offsetId, success: { (artileList) in
@@ -152,8 +151,8 @@ class RemoteService {
     }
      
     
-  private  func checkSuccess<T>(result:Result<T>) -> Bool {
-        return result.status==0
+  private  func checkSuccess(result:NSObject) -> Bool {
+        return true==result.value(forKey: "isSuccess") as? Bool
     }
 
 }

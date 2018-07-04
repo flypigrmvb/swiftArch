@@ -14,12 +14,14 @@ target 'swiftArch' do
     pod 'Kingfisher', '~>4.8.0'
     pod 'RegexKitLite-NoWarning'
     pod 'FSPagerView'
+    pod 'UICollectionViewLeftAlignedLayout'
 end
 
 
 #target 'swiftArchTests' do
-#    pod 'Alamofire', '~> 4.7'
-#    pod 'HandyJSON', '~> 4.1.1'
-#    pod 'SQLite.swift', ' = 0.11.4'
+
+    pod 'Alamofire', '~> 4.7'
+    pod 'HandyJSON', '~> 4.1.1'
+    pod 'SQLite.swift', '~> 0.11.5'
 #end
 
