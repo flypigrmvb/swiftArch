@@ -620,6 +620,7 @@
 				61D471F52080457A009B10F5 /* Frameworks */,
 				61D471F62080457A009B10F5 /* Resources */,
 				565B59ADF44471A6A4C91CA6 /* [CP] Embed Pods Frameworks */,
+				9416BE5A97FC26E0844D2AB7 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -778,6 +779,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"$PODS_ROOT/R.swift/rswift\" generate \"$SRCROOT\"";
+		};
+		9416BE5A97FC26E0844D2AB7 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-swiftArch/Pods-swiftArch-resources.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 

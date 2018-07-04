@@ -5,7 +5,7 @@ use_frameworks!
 target 'swiftArch' do
     pod 'Alamofire', '~> 4.7'
     pod 'HandyJSON', '~> 4.1.1'
-    pod 'SQLite.swift', '= 0.11.4'
+    pod 'SQLite.swift', '~> 0.11.5'
     pod 'SnapKit', '~> 4.0.0'
     pod 'R.swift'
     pod 'MJRefresh'
